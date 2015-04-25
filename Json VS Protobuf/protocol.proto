@@ -1,0 +1,13 @@
+message Log {
+    required int32 id = 1;
+    required string content = 2;
+    required int32 status = 3;
+    required int32 times = 4;
+}
+
+message Person {
+    required int32 id = 1;
+    required string name = 2;
+    repeated int32 tags = 3;
+    repeated Log logs = 4;
+}
