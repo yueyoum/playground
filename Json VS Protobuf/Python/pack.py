@@ -43,7 +43,7 @@ class Pack(object):
 
         for _id, content, status, times in self.LOGS:
             data['logs'].append({
-                    '_id': _id,
+                    'id': _id,
                     'content': content,
                     'status': status,
                     'times': times
