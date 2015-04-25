@@ -1,3 +1,4 @@
+import os
 import json
 import gzip
 from cStringIO import StringIO
@@ -8,10 +9,11 @@ from protocol_pb2 import Person
 
 class UnPack(object):
     def __init__(self):
-        self.data_pb = open("data.pb").read()
-        self.data_json = open("data.json").read()
+        project_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        self.data_pb = open(os.path.join(project_path, "data.pb")).read()
+        self.data_json = open(os.path.join(project_path, "data.json")).read()
 
-        self.data_json_gzip_buf = StringIO(open("data.json.gz").read())
+        self.data_json_gzip_buf = StringIO(open(os.path.join(project_path, "data.json.gz")).read())
 
     def unpack_pb(self):
         msg = Person()  

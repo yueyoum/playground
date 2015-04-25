@@ -12,7 +12,10 @@
 
 -define(TAGS, lists:seq(1, 20)).
 -define(LOGS(Amount), lists:map(
-                    fun(Id) -> [Id, "Log Contents..." ++ integer_to_list(Id), Id rem 2, 10000000 + Id] end,
+                    fun(Id) ->
+                        C = "Log Contents..." ++ integer_to_list(Id),
+                        [Id, list_to_binary(C), Id rem 2, 10000000 + Id]
+                    end,
                     lists:seq(1, Amount)
                     )
         ).
@@ -33,13 +36,13 @@ pack_pb(LogAmount) ->
         logs = create_logs_record_list(LogAmount)
     },
 
-    protocol:encode_msg(Person, [{verify, true}]).
+    protocol:encode_msg(Person, [{verify, false}]).
 
 
 pack_json(LogAmount) ->
     Person = #{
         id => 1,
-        name => "My Playground!!!",
+        name => <<"My Playground!!!">>,
         tags => ?TAGS,
         logs => create_logs_maps_list(LogAmount)
     },
@@ -97,7 +100,7 @@ create_logs_maps_list(Amount) when Amount >= 0 ->
 
 get_data(Type) ->
     {Path, _Options} = filename:find_src(json_vs_proto),
-    DataPath = get_parent_path(2, Path),
+    DataPath = get_parent_path(3, Path),
     File = get_file(Type, DataPath),
     {ok, Data} = file:read_file(File),
     Data.
