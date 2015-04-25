@@ -1,0 +1,14 @@
+{application, json_vs_proto,
+ [
+  {description, "An Erlang json_vs_proto library"},
+  {vsn, "1"},
+  {modules, [
+             json_vs_proto
+            ]},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {env, []}
+ ]}.
