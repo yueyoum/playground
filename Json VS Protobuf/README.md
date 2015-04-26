@@ -56,12 +56,11 @@
 ## 结论
 
 *   由于CSharp语言自身的高效率，再加上预生成代码的protobuf方式。
+    
     CSharp + Protobuf 是序列化/反序列化速度最快的
-
 *   Google官方的python protobuf库 效率低到无法形容的地步
 *   Erlang的表现非常不错，并没有比CSharp慢太多，而且在json的处理上还领先于CSharp
-
-*   Python做服务器，如果对i效率要求很高，那么还是找其他的替换官方的protobuf 库
+*   Python做服务器，如果对效率要求很高，那么还是找其他的替换官方的protobuf 库
 *   Erlang做服务器，Protobuf/Json都是不错的选择。
 
 
