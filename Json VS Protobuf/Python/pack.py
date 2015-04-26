@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import json
 import gzip
 from cStringIO import StringIO
@@ -64,37 +65,31 @@ if __name__ == '__main__':
     import sys
     import timeit
 
-    if len(sys.argv) < 2:
-        print "python pack.py [log amount] [beachmark times]"
+    try:
+        log_amount = int(sys.argv[1])
+        times = int(sys.argv[2])
+    except:
+        print "./pack.py [LOG AMOUNT] [BENCHMARK TIMES]"
         sys.exit(1)
-
-
-    log_amount = int(sys.argv[1])
-    times = int(sys.argv[2])
 
 
     p = Pack(log_amount)
     pb_data = p.create_pb()
     json_data = p.create_json()
-
-    pb_data_gzip = p.compress_with_gzip(pb_data)
     json_data_gzip = p.compress_with_gzip(json_data)
 
-    print "Protobuf Length     :", len(pb_data)
-    print "Json Length         :", len(json_data)
-    print "Gzip Protobuf Length:", len(pb_data_gzip)
-    print "Gzip Json Length    :", len(json_data_gzip)
+    print "LogAmount = ", log_amount
+    print "Protobuf Size     :", len(pb_data)
+    print "Json Size         :", len(json_data)
+    print "Json GZip Size    :", len(json_data_gzip)
 
-
-    p = Pack(log_amount)
 
     pb_t = timeit.Timer("p.create_pb()", setup="from __main__ import p")
     json_t = timeit.Timer("p.create_json()", setup="from __main__ import p")
-    pb_gzip_t = timeit.Timer("p.compress_with_gzip(p.create_pb())", setup="from __main__ import p")
     json_gzip_t = timeit.Timer("p.compress_with_gzip(p.create_json())", setup="from __main__ import p")
 
     print
-    print "Protobuf            :", pb_t.repeat(number=times)
-    print "Json                :", json_t.repeat(number=times)
-    print "Gzip Protobuf       :", pb_gzip_t.repeat(number=times)
-    print "Gzip Json           :", json_gzip_t.repeat(number=times)
+    print "Benchmark Times =", times
+    print "Protobuf Seconds  :", pb_t.timeit(number=times)
+    print "Json Seconds      :", json_t.timeit(number=times)
+    print "Json GZip Seconds :", json_gzip_t.timeit(number=times)

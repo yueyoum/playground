@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import json
 import gzip
@@ -35,12 +36,12 @@ if __name__ == '__main__':
     import sys
     import timeit
 
-    if len(sys.argv) < 1:
-        print "python unpack.py [beachmark times]"
+    try:
+        times = int(sys.argv[1])
+    except:
+        print "python unpack.py [BENCHMARK TIMES]"
         sys.exit(1)
 
-
-    times = int(sys.argv[1])
 
     p = UnPack()
 
@@ -48,6 +49,7 @@ if __name__ == '__main__':
     json_t = timeit.Timer("p.unpack_json()", setup="from __main__ import p")
     json_gzip_t = timeit.Timer("p.unpack_json_gzip()", setup="from __main__ import p")
 
-    print "Protobuf            :", pb_t.repeat(number=times)
-    print "Json                :", json_t.repeat(number=times)
-    print "Gzip Json           :", json_gzip_t.repeat(number=times)
+    print "Benchmark Times =", times
+    print "Protobuf Seconds  :", pb_t.timeit(number=times)
+    print "Json Seconds      :", json_t.timeit(number=times)
+    print "Json GZip Seconds :", json_gzip_t.timeit(number=times)
