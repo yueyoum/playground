@@ -49,7 +49,7 @@ static class Program
         }
 
         logs = new List<LogEntry>();
-        for(var i=1; i<=logAmount; i++)
+        for(var i=0; i<logAmount; i++)
         {
             var log = new LogEntry
             {

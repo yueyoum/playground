@@ -18,6 +18,7 @@
 *   `data.pb` 是 数据通过 protobuf 序列化后的文件
 *   `data.json` 是 数据通过 json 序列化后的文件
 *   `data.json.gz` 是数据通过 json 序列号后，并且用 gzip 压缩后的文件
+*   gzip  压缩等级为6
 *   序列化测试需要两个参数
     *   LOG AMOUNT: 通过不同logs数量来模拟不同大小的数据
     *   BENCHMARK TIMES： 序列化次数
@@ -42,7 +43,7 @@
     LogAmount =  100
     Protobuf Size     : 3050
     Json Size         : 7707
-    Json GZip Size    : 896
+    Json GZip Size    : 898
 
     Benchmark Times = 100
     Protobuf Seconds  : 0.309223890305
@@ -102,9 +103,9 @@
     ```
     ./pack.exe 100 100
     LogAmount = 100
-    Protobuf Size         : 3052
-    Json Size             : 6886
-    Json GZip Size        : 846
+    Protobuf Size         : 3050
+    Json Size             : 6882
+    Json GZip Size        : 843
 
     Benchmark Times = 100
     Protobuf Seconds      : 0.004

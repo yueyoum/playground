@@ -55,7 +55,7 @@ class Pack(object):
 
     def compress_with_gzip(self, data):
         buf = StringIO()
-        with gzip.GzipFile(fileobj=buf, mode='w') as f:
+        with gzip.GzipFile(fileobj=buf, mode='w', compresslevel=6) as f:
             f.write(data)
 
         return buf.getvalue()
