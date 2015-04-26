@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Text;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 using LitJson;
@@ -22,6 +21,10 @@ static class Program
         try
         {
             times = Convert.ToInt32(args[0]);
+            if (times <= 0)
+            {
+                throw new Exception("times must greate than zero!");
+            }
         }
         catch
         {
@@ -29,33 +32,18 @@ static class Program
             return;
         }
 
-        if (times > 0)
-        {
-            Dictionary<string, Action> actions = new Dictionary<string, Action> {
-                {"Protobuf  :", UnPackPb},
-                {"Json      :", UnPackJson},
-                {"Json Gzip :", UnPackJsonGzip},
-            };
-
-            foreach(KeyValuePair<string, Action> kv in actions)
-            {
-                Console.Write(kv.Key + "[");
-                for (var i=0; i<3; i++)
-                {
-                    Console.Write("{0}, ", Run(kv.Value, times));
-                }
-                Console.WriteLine("]");
-            }
-        }
+        Console.WriteLine("Protobuf  : {0}", RunPb(times));
+        Console.WriteLine("Json      : {0}", RunJson(times));
+        Console.WriteLine("Json GZip : {0}", RunJsonGZip(times));
     }
 
-    public static double Run(Action action, int times)
+    public static double RunPb(int times)
     {
         Stopwatch sw = new Stopwatch();
         sw.Start();
         for(var i=0; i<times; i++)
         {
-            action();
+            UnPackPb();
         }
         sw.Stop();
 
@@ -63,6 +51,33 @@ static class Program
         return ts.Milliseconds / 1000.0;
     }
 
+    public static double RunJson(int times)
+    {
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+        for(var i=0; i<times; i++)
+        {
+            UnPackJson();
+        }
+        sw.Stop();
+
+        TimeSpan ts = sw.Elapsed;
+        return ts.Milliseconds / 1000.0;
+    }
+
+    public static double RunJsonGZip(int times)
+    {
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+        for(var i=0; i<times; i++)
+        {
+            UnPackJsonGzip();
+        }
+        sw.Stop();
+
+        TimeSpan ts = sw.Elapsed;
+        return ts.Milliseconds / 1000.0;
+    }
 
 
     public static byte[] GetData(string fileName)
