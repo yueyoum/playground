@@ -155,6 +155,7 @@
     [pg][2] 基于 [mono][5] 平台，所以可以在 Windows, Linux, MacOS 上使用。
 
 *   使用 [LitJson][6] 作为Json库
+*   Json直接使用的 `LitJson.JsonData`，没有预先写Class来序列化/反序列化。不知道对速度有什么影响。
 *   使用 [SharpZipLib][7] 作为GZip 压缩/解压缩工具
 *   序列化: `make pack.exe && ./pack.exe [LOG AMOUNT] [BENCHMARK TIMES]`
     ```
