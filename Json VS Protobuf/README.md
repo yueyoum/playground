@@ -6,6 +6,12 @@
 *   反序列化速度
 
 
+## 对比
+
+
+
+
+
 ## 说明
 
 *   `protocol.proto` 是用来测试的 protobuf 描述文件
@@ -13,7 +19,7 @@
 *   `data.json` 是 数据通过 json 序列化后的文件
 *   `data.json.gz` 是数据通过 json 序列号后，并且用 gzip 压缩后的文件
 *   序列化测试需要两个参数
-    *   LOG AMOUNT: 通过不用logs数量来模拟不同大小的数据
+    *   LOG AMOUNT: 通过不同logs数量来模拟不同大小的数据
     *   BENCHMARK TIMES： 序列化次数
 *   反序列化需要一个参数
     *   BENCHMARK TIMES： 反序列化次数
@@ -63,14 +69,14 @@
     ```
     ./benchmark pack 100 100
     LogAmount = 100
-    Protobuf Size     : 3052
-    Json Size         : 6887
-    Json Gzip Size    : 874
+    Protobuf Size     : 3050
+    Json Size         : 6882
+    Json Gzip Size    : 868
 
     BenchmarkTimes = 100
-    Protobuf Seconds  : 0.017289
-    Json Seconds      : 0.023531
-    Json Gzip Seconds : 0.033379
+    Protobuf Seconds  : 0.018345
+    Json Seconds      : 0.023872
+    Json Gzip Seconds : 0.033556
 
     ```
 *   反序列化测试: `./benchmark unpack [BENCHMARK TIMES]`
@@ -96,30 +102,25 @@
     ```
     ./pack.exe 100 100
     LogAmount = 100
-    Protobuf Size         : 3048
-    Json Size             : 6880
-    Json GZip Size        : 840
+    Protobuf Size         : 3052
+    Json Size             : 6886
+    Json GZip Size        : 846
 
     Benchmark Times = 100
     Protobuf Seconds      : 0.004
-    Json Seconds          : 0.039
+    Json Seconds          : 0.04
     Json GZip Seconds     : 0.088
 
     ```
 *   反序列化: `make unpack.exe && ./unpack.exe [BENCHMARK TIMES]`
-```
-./unpack.exe 100
-Benchmark Times = 100
-Protobuf Seconds  : 0.025
-Json Seconds      : 0.104
-Json GZip Seconds : 0.107
+    ```
+    ./unpack.exe 100
+    Benchmark Times = 100
+    Protobuf Seconds  : 0.025
+    Json Seconds      : 0.104
+    Json GZip Seconds : 0.107
 
-```
-
-
-
-
-## 对比
+    ```
 
 
 

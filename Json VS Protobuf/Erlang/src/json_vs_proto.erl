@@ -13,13 +13,13 @@
          unpack_json_gzip/0]).
 
 
--define(TAGS, lists:seq(1, 20)).
+-define(TAGS, lists:seq(0, 19)).
 -define(LOGS(Amount), lists:map(
                     fun(Id) ->
                         C = "Log Contents..." ++ integer_to_list(Id),
                         [Id, list_to_binary(C), Id rem 2, 10000000 + Id]
                     end,
-                    lists:seq(1, Amount)
+                    lists:seq(0, Amount-1)
                     )
         ).
 

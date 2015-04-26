@@ -24,7 +24,7 @@ class LogEntry
 
 static class Program
 {
-    public static int[] tags = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19};
+    public static int[] tags = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19};
     public static List<LogEntry> logs;
 
     public static int logAmount;
@@ -49,7 +49,7 @@ static class Program
         }
 
         logs = new List<LogEntry>();
-        for(var i=0; i<logAmount; i++)
+        for(var i=1; i<=logAmount; i++)
         {
             var log = new LogEntry
             {
