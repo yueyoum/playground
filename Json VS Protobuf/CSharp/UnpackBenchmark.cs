@@ -49,8 +49,7 @@ static class Program
         }
         sw.Stop();
 
-        var ts = sw.Elapsed;
-        return ts.Milliseconds / 1000.0;
+        return sw.ElapsedMilliseconds / 1000.0;
     }
 
     public static double RunJson()
@@ -63,8 +62,7 @@ static class Program
         }
         sw.Stop();
 
-        var ts = sw.Elapsed;
-        return ts.Milliseconds / 1000.0;
+        return sw.ElapsedMilliseconds / 1000.0;
     }
 
     public static double RunJsonGZip()
@@ -77,8 +75,7 @@ static class Program
         }
         sw.Stop();
 
-        var ts = sw.Elapsed;
-        return ts.Milliseconds / 1000.0;
+        return sw.ElapsedMilliseconds / 1000.0;
     }
 
 
