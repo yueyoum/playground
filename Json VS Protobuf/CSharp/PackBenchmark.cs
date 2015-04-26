@@ -64,7 +64,7 @@ static class Program
 
         Console.WriteLine("LogAmount = {0}", logAmount);
         Console.WriteLine("Protobuf Size         : {0}", PackPb().Length);
-        // Console.WriteLine("Protobuf GZip Size    : {0}", PackPbGZip().Length);
+        Console.WriteLine("Protobuf GZip Size    : {0}", PackPbGZip().Length);
         Console.WriteLine("Json Size             : {0}", PackJson().Length);
         Console.WriteLine("Json GZip Size        : {0}", PackJsonGZip().Length);
 
@@ -74,7 +74,6 @@ static class Program
         // Console.WriteLine("Protobuf GZip Seconds : {0}", RunPbGZip());
         Console.WriteLine("Json Seconds          : {0}", RunJson());
         Console.WriteLine("Json GZip Seconds     : {0}", RunJsonGZip());
-
     }
 
 
@@ -89,8 +88,7 @@ static class Program
 
         sw.Stop();
 
-        var ts = sw.Elapsed;
-        return ts.Milliseconds / 1000.0;
+        return sw.ElapsedMilliseconds / 1000.0;
     }
 
 
@@ -105,8 +103,7 @@ static class Program
 
         sw.Stop();
 
-        var ts = sw.Elapsed;
-        return ts.Milliseconds / 1000.0;
+        return sw.ElapsedMilliseconds / 1000.0;
     }
 
     public static double RunJson()
@@ -120,8 +117,7 @@ static class Program
 
         sw.Stop();
 
-        var ts = sw.Elapsed;
-        return ts.Milliseconds / 1000.0;
+        return sw.ElapsedMilliseconds / 1000.0;
     }
 
     public static double RunJsonGZip()
@@ -135,8 +131,7 @@ static class Program
 
         sw.Stop();
 
-        var ts = sw.Elapsed;
-        return ts.Milliseconds / 1000.0;
+        return sw.ElapsedMilliseconds / 1000.0;
     }
 
 
