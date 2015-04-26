@@ -2,6 +2,9 @@
 
 %% json_vs_proto: json_vs_proto library's entry point.
 
+-export([setup/0,
+         setup/1]).
+
 -export([pack_pb/1,
          pack_json/1,
          pack_json_gzip/1,
@@ -32,7 +35,7 @@ pack_pb(LogAmount) ->
     Person = #'Person'{
         id = 1,
         name = "My Playground!!!",
-        tags = ?TAGS,
+        tags = get_tags(),
         logs = create_logs_record_list(LogAmount)
     },
 
@@ -43,7 +46,7 @@ pack_json(LogAmount) ->
     Person = #{
         id => 1,
         name => <<"My Playground!!!">>,
-        tags => ?TAGS,
+        tags => get_tags(),
         logs => create_logs_maps_list(LogAmount)
     },
 
@@ -82,7 +85,7 @@ create_logs_record_list(Amount) when Amount >= 0 ->
         }
     end,
 
-    [Fun(Item) || Item <- ?LOGS(Amount)].
+    [Fun(Item) || Item <- get_logs()].
     
 
 create_logs_maps_list(Amount) when Amount >= 0 ->
@@ -95,15 +98,21 @@ create_logs_maps_list(Amount) when Amount >= 0 ->
         }
     end,
 
-    [Fun(Item) || Item <- ?LOGS(Amount)].
+    [Fun(Item) || Item <- get_logs()].
 
 
 get_data(Type) ->
-    {Path, _Options} = filename:find_src(json_vs_proto),
-    DataPath = get_parent_path(3, Path),
-    File = get_file(Type, DataPath),
-    {ok, Data} = file:read_file(File),
-    Data.
+    case get(Type) of
+        undefined ->
+            {Path, _Options} = filename:find_src(json_vs_proto),
+            DataPath = get_parent_path(3, Path),
+            File = get_file(Type, DataPath),
+            {ok, Data} = file:read_file(File),
+            put(Type, Data),
+            Data;
+        Data ->
+            Data
+    end.
 
 get_file(pb, DataPath) ->
     filename:join(DataPath, "data.pb");
@@ -120,6 +129,42 @@ get_parent_path(0, Path) ->
 
 get_parent_path(N, Path) when N > 0 ->
     get_parent_path(N-1, filename:dirname(Path)).
+
+
+get_tags() ->
+    case get(tags) of
+        undefined ->
+            Tags = ?TAGS,
+            put(tags, Tags),
+            Tags;
+        Tags ->
+            Tags
+    end.
+
+get_logs() ->
+    get(logs).
+
+get_logs(Amount) ->
+    case get(logs) of
+        undefined ->
+            Logs = ?LOGS(Amount),
+            put(logs, Logs),
+            Logs;
+        Logs ->
+            Logs
+    end.
+
+
+setup() ->
+    get_tags(),
+    get_data(pb),
+    get_data(json),
+    get_data(json_gzip),
+    ok.
+
+setup(Amount) ->
+    get_logs(Amount),
+    setup().
 
 
 

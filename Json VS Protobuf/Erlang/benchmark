@@ -2,38 +2,46 @@
 %% -*- erlang -*-
 
 usage() ->
-    io:format("usage: benchmark pack LOG_AMOUNT BENCHMARK_TIMES~n"),
-    io:format("       benchmark unpack BENCHMARK_TIMES~n"),
+    io:format("usage: ./benchmark pack   [LOG AMOUNT] [BENCHMARK TIMES]~n"),
+    io:format("       ./benchmark unpack [BENCHMARK TIMES]~n"),
     halt(1).
 
-
-main([Method | Args]) ->
+setup() ->
     SelfPath = filename:dirname(escript:script_name()),
     EbinPath = filename:join([SelfPath, "ebin"]),
     DepsEbinPath = filelib:wildcard(filename:join([SelfPath, "deps/*/ebin"])),
 
     Paths = [EbinPath | DepsEbinPath],
 
-    lists:foreach(fun(P) -> code:add_patha(P) end, Paths),
+    lists:foreach(fun(P) -> code:add_patha(P) end, Paths).
 
+
+main(["pack", LogAmount, BenchmarkTimes]) ->
+    [Amount, Times] =
     try
-        case Method of
-            "pack" ->
-                [LogAmount, BenchmarkTimes] = Args,
-                Amount = list_to_integer(LogAmount),
-                Times = list_to_integer(BenchmarkTimes),
-                pack_benchmark(Amount, Times);
-            "unpack" ->
-                [BenchmarkTimes] = Args,
-                Times = list_to_integer(BenchmarkTimes),
-                unpack_benchmark(Times)
-        end
+        [list_to_integer(LogAmount), list_to_integer(BenchmarkTimes)]
     catch
-        Error:Reaon ->
-            io:format("~p:~p~n", [Error, Reaon]),
-            usage()
-    end;
+        _:_ ->
+            usage(),
+            [0, 0]
+    end,
 
+    setup(),
+    pack_benchmark(Amount, Times);
+
+
+main(["unpack", BenchmarkTimes]) ->
+    Times =
+    try
+        list_to_integer(BenchmarkTimes)
+    catch
+        _:_ ->
+            usage(),
+            0
+    end,
+
+    setup(),
+    unpack_benchmark(Times);
 
 
 main(_) ->
@@ -41,35 +49,33 @@ main(_) ->
 
 
 pack_benchmark(Amount, Times) ->
-    io:format("Protobuf  : ~p~n", [size(json_vs_proto:pack_pb(Amount))]),
-    io:format("Json      : ~p~n", [size(json_vs_proto:pack_json(Amount))]),
-    io:format("Json Gzip : ~p~n~n", [size(json_vs_proto:pack_json_gzip(Amount))]),
+    json_vs_proto:setup(Amount),
+    io:format("LogAmount = ~p~n", [Amount]),
+    io:format("Protobuf Size     : ~p~n", [size(json_vs_proto:pack_pb(Amount))]),
+    io:format("Json Size         : ~p~n", [size(json_vs_proto:pack_json(Amount))]),
+    io:format("Json Gzip Size    : ~p~n~n", [size(json_vs_proto:pack_json_gzip(Amount))]),
 
-    io:format("Protobuf  : ~p~n", [pack_tc(3, pack_pb, Amount, Times, [])]),
-    io:format("Json      : ~p~n", [pack_tc(3, pack_json, Amount, Times, [])]),
-    io:format("Json Gzip : ~p~n", [pack_tc(3, pack_json_gzip, Amount, Times, [])]).
+    io:format("BenchmarkTimes = ~p~n", [Times]),
+    io:format("Protobuf Seconds  : ~p~n", [pack_tc(pack_pb, Amount, Times)]),
+    io:format("Json Seconds      : ~p~n", [pack_tc(pack_json, Amount, Times)]),
+    io:format("Json Gzip Seconds : ~p~n", [pack_tc(pack_json_gzip, Amount, Times)]).
 
 
 unpack_benchmark(Times) ->
-    io:format("Protobuf  : ~p~n", [unpack_tc(3, unpack_pb, Times, [])]),
-    io:format("Json      : ~p~n", [unpack_tc(3, unpack_json, Times, [])]),
-    io:format("Json Gzip : ~p~n", [unpack_tc(3, unpack_json_gzip, Times, [])]).
+    json_vs_proto:setup(),
+    io:format("BenchmarkTimes = ~p~n", [Times]),
+    io:format("Protobuf Seconds  : ~p~n", [unpack_tc(unpack_pb, Times)]),
+    io:format("Json Seconds      : ~p~n", [unpack_tc(unpack_json, Times)]),
+    io:format("Json Gzip Seconds : ~p~n", [unpack_tc(unpack_json_gzip, Times)]).
 
 
-
-pack_tc(0, _Func, _Amount, _Times, Result) ->
-    lists:reverse(Result);
-
-pack_tc(N, Func, Amount, Times, Result) when N > 0 ->
+pack_tc(Func, Amount, Times) ->
     Args = [fun(_) -> json_vs_proto:Func(Amount) end, lists:seq(1, Times)],
     {Time, _} = timer:tc(lists, foreach, Args),
-    pack_tc(N-1, Func, Amount, Times, [Time / 1000 | Result]).
+    Time / 1000000.
 
 
-unpack_tc(0, _Func, _Times, Result) ->
-    lists:reverse(Result);
-
-unpack_tc(N, Func, Times, Result) when N > 0 ->
+unpack_tc(Func, Times)->
     Args = [fun(_) -> json_vs_proto:Func() end, lists:seq(1, Times)],
     {Time, _} = timer:tc(lists, foreach, Args),
-    unpack_tc(N-1, Func, Times, [Time / 1000 | Result]).
+    Time / 1000000.
