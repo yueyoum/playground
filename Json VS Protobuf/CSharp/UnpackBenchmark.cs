@@ -12,70 +12,72 @@ using MyProject.Protocol.Define;
 static class Program
 {
     public static string basePath;
+    public static int benchmarkTimes;
+
     public static void Main(string[] args)
     {
         var location = System.Reflection.Assembly.GetEntryAssembly().Location;
         basePath = Path.GetDirectoryName(Path.GetDirectoryName(location));
 
-        int times = 0;
         try
         {
-            times = Convert.ToInt32(args[0]);
-            if (times <= 0)
+            benchmarkTimes = Convert.ToInt32(args[0]);
+            if (benchmarkTimes <= 0)
             {
                 throw new Exception("times must greate than zero!");
             }
         }
         catch
         {
-            Console.WriteLine("usage: ./unpack.exe [TIMES]");
+            Console.WriteLine("usage: ./unpack.exe [BENCHMARK TIMES]");
             return;
         }
 
-        Console.WriteLine("Protobuf  : {0}", RunPb(times));
-        Console.WriteLine("Json      : {0}", RunJson(times));
-        Console.WriteLine("Json GZip : {0}", RunJsonGZip(times));
+        Console.WriteLine("Benchmark Times = {0}", benchmarkTimes);
+        Console.WriteLine("Protobuf Seconds  : {0}", RunPb());
+        Console.WriteLine("Json Seconds      : {0}", RunJson());
+        Console.WriteLine("Json GZip Seconds : {0}", RunJsonGZip());
     }
 
-    public static double RunPb(int times)
+    public static double RunPb()
     {
-        Stopwatch sw = new Stopwatch();
+        var sw = new Stopwatch();
         sw.Start();
-        for(var i=0; i<times; i++)
+        for(var i=0; i<benchmarkTimes; i++)
         {
             UnPackPb();
         }
         sw.Stop();
 
-        TimeSpan ts = sw.Elapsed;
+        var ts = sw.Elapsed;
         return ts.Milliseconds / 1000.0;
     }
 
-    public static double RunJson(int times)
+    public static double RunJson()
     {
-        Stopwatch sw = new Stopwatch();
+        var sw = new Stopwatch();
         sw.Start();
-        for(var i=0; i<times; i++)
+        for(var i=0; i<benchmarkTimes; i++)
         {
             UnPackJson();
         }
         sw.Stop();
 
-        TimeSpan ts = sw.Elapsed;
+        var ts = sw.Elapsed;
         return ts.Milliseconds / 1000.0;
     }
 
-    public static double RunJsonGZip(int times)
+    public static double RunJsonGZip()
     {
-        Stopwatch sw = new Stopwatch();
+        var sw = new Stopwatch();
         sw.Start();
-        for(var i=0; i<times; i++)
+        for(var i=0; i<benchmarkTimes; i++)
         {
             UnPackJsonGzip();
         }
         sw.Stop();
 
-        TimeSpan ts = sw.Elapsed;
+        var ts = sw.Elapsed;
         return ts.Milliseconds / 1000.0;
     }
 
