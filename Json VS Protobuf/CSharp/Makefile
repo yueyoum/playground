@@ -1,6 +1,7 @@
 unpack.exe: UnpackBenchmark.cs
 	gmcs -out:unpack.exe UnpackBenchmark.cs \
-	-recurse:LitJson/*.cs \
+	-r:LitJson.dll \
+	-r:ICSharpCode.SharpZipLib.dll \
 	-recurse:SharpZipLib/*.cs \
 	-r:protobuf-net.dll \
 	-r:ProtocolDefine.dll \
