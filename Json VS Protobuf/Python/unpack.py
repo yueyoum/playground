@@ -17,7 +17,7 @@ class UnPack(object):
         self.data_json_gzip_buf = StringIO(open(os.path.join(project_path, "data.json.gz")).read())
 
     def unpack_pb(self):
-        msg = Person()  
+        msg = Person()
         msg.ParseFromString(self.data_pb)
         return msg
 
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     try:
         times = int(sys.argv[1])
     except:
-        print "python unpack.py [BENCHMARK TIMES]"
+        print "./unpack.py [BENCHMARK TIMES]"
         sys.exit(1)
 
 
