@@ -64,14 +64,14 @@ static class Program
 
         Console.WriteLine("LogAmount = {0}", logAmount);
         Console.WriteLine("Protobuf Size         : {0}", PackPb().Length);
-        Console.WriteLine("Protobuf GZip Size    : {0}", PackPbGZip().Length);
+        // Console.WriteLine("Protobuf GZip Size    : {0}", PackPbGZip().Length);
         Console.WriteLine("Json Size             : {0}", PackJson().Length);
         Console.WriteLine("Json GZip Size        : {0}", PackJsonGZip().Length);
 
         Console.WriteLine();
         Console.WriteLine("Benchmark Times = {0}", benchmarkTimes);
         Console.WriteLine("Protobuf Seconds      : {0}", RunPb());
-        Console.WriteLine("Protobuf GZip Seconds : {0}", RunPbGZip());
+        // Console.WriteLine("Protobuf GZip Seconds : {0}", RunPbGZip());
         Console.WriteLine("Json Seconds          : {0}", RunJson());
         Console.WriteLine("Json GZip Seconds     : {0}", RunJsonGZip());
 
