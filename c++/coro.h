@@ -15,12 +15,22 @@ typedef boost::coroutines::symmetric_coroutine<void>::call_type call_type;
 typedef boost::coroutines::symmetric_coroutine<void>::yield_type yield_type;
 
 struct Coroutine;
+class Event;
+class Scheduler;
+
+static Scheduler* sche_;
+
+Scheduler& get_scheduler()
+{
+    return *sche_;
+}
 
 namespace this_coroutine
 {
     static Coroutine* current;
     static void jump(Coroutine*);
     void yield();
+    void wait();
 }
 
 
@@ -189,6 +199,12 @@ public:
         : io_(ios),
           evt_(Event())
     {
+        coro::sche_ = this;
+    }
+
+    Event& event()
+    {
+        return evt_;
     }
 
     void run()
@@ -222,7 +238,7 @@ private:
         {
             std::cout << "[loop] wait start\n";
             // co->call_from = NULL;
-            evt_.wait();
+            this_coroutine::wait();
             std::cout << "[loop] wait done\n";
 
             auto co = coroutines.front();
@@ -284,6 +300,17 @@ void this_coroutine::yield()
     }
 
     this_coroutine::current->yield();
+}
+
+void this_coroutine::wait()
+{
+    if(!this_coroutine::current)
+    {
+        std::cout << "ERROR can not wait in main context" << std::endl;
+        exit(1);
+    }
+
+    get_scheduler().event().wait();
 }
 
 }
