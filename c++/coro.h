@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <queue>
+#include <mutex>
 #include <boost/asio.hpp>
 #include <boost/coroutine/symmetric_coroutine.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -18,16 +19,9 @@ struct Coroutine;
 class Event;
 class Scheduler;
 
-static Scheduler* sche_;
-
-Scheduler& get_scheduler()
-{
-    return *sche_;
-}
-
 namespace this_coroutine
 {
-    static Coroutine* current;
+    static Coroutine* current = NULL;
     static void jump(Coroutine*);
     void yield();
     void wait();
@@ -97,10 +91,16 @@ struct Coroutine
             (*(other->ct))();
         }
     }
+
+    void resume()
+    {
+        this_coroutine::current = this;
+        (*ct)();
+    }
 };
 
 
-static Coroutine* spawn(std::function<void()> func, std::string name)
+Coroutine* spawn(std::function<void()> func, std::string name)
 {
     std::cout << "spawn for " << name << std::endl;
     Coroutine* co = new Coroutine(name);
@@ -195,16 +195,33 @@ private:
 class Scheduler
 {
 public:
-    Scheduler(boost::asio::io_service& ios)
-        : io_(ios),
-          evt_(Event())
+    static Scheduler* create(boost::asio::io_service& io)
     {
-        coro::sche_ = this;
+        if(!instance_)
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if(!instance_)
+            {
+                instance_ = new Scheduler(io);
+            }
+        }
+
+        return instance_;
+    }
+
+    static Scheduler* get()
+    {
+        return instance_;
     }
 
     Event& event()
     {
         return evt_;
+    }
+
+    void post(std::function<void()> func)
+    {
+        io_.post(func);
     }
 
     void run()
@@ -223,21 +240,20 @@ public:
         add_to_queue(co);
     }
 
-    void add_to_queue(Coroutine* co)
-    {
-        coroutines.push(co);
-        evt_.set();
-        std::cout << "spawn & set done\n";
-    }
 
 private:
+    Scheduler(boost::asio::io_service& ios)
+        : io_(ios),
+          evt_(Event())
+    {
+    }
+
     void loop()
     {
         std::cout << "in hub loop" << std::endl;
         for(;;)
         {
             std::cout << "[loop] wait start\n";
-            // co->call_from = NULL;
             this_coroutine::wait();
             std::cout << "[loop] wait done\n";
 
@@ -262,6 +278,16 @@ private:
             }
         }
     }
+
+    void add_to_queue(Coroutine* co)
+    {
+        coroutines.push(co);
+        evt_.set();
+        std::cout << "add_to_queue done\n";
+    }
+
+    static std::mutex mutex_;
+    static Scheduler* instance_;
 
     boost::asio::io_service& io_;
     std::queue<Coroutine*> coroutines;
@@ -310,8 +336,12 @@ void this_coroutine::wait()
         exit(1);
     }
 
-    get_scheduler().event().wait();
+    Scheduler::get()->event().wait();
 }
+
+
+std::mutex Scheduler::mutex_;
+Scheduler* Scheduler::instance_ = NULL;
 
 }
 

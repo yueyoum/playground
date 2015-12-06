@@ -31,16 +31,16 @@ int main()
     boost::asio::io_service io;
     boost::asio::io_service::work w(io);
 
-    coro::Scheduler sche(io);
+    auto sche = coro::Scheduler::create(io);
 
-    sche.spawn(one, std::string("one"));
+    sche->spawn(one, std::string("one"));
 
 
     boost::asio::deadline_timer timter(io, boost::posix_time::seconds(3));
     timter.async_wait(
             [&sche](const boost::system::error_code&)
             {
-                sche.spawn(two, std::string("two"));
+                sche->spawn(two, std::string("two"));
             }
             );
 
@@ -48,11 +48,13 @@ int main()
     timter1.async_wait(
             [&sche](const boost::system::error_code&)
             {
-                sche.spawn(three, std::string("three"));
+                sche->spawn(three, std::string("three"));
             }
             );
 
-    sche.run();
+    sche->run();
+
+    delete sche;
     std::cout << "end" << std::endl;
 }
 
