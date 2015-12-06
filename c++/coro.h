@@ -18,6 +18,19 @@ typedef boost::coroutines::symmetric_coroutine<void>::yield_type yield_type;
 struct Coroutine;
 class Event;
 class Scheduler;
+class Timer;
+
+static boost::asio::io_service* io;
+void io_service(boost::asio::io_service& ios)
+{
+    io = &ios;
+}
+
+boost::asio::io_service& io_service()
+{
+    return *io;
+}
+
 
 namespace this_coroutine
 {
@@ -27,6 +40,7 @@ namespace this_coroutine
     void get();
     void yield();
     void wait();
+    Timer* sleep_for(int);
 }
 
 
@@ -215,7 +229,6 @@ private:
     Coroutine* co;
 };
 
-
 class Scheduler
 {
 public:
@@ -299,6 +312,39 @@ private:
     Event evt_;
 };
 
+class Timer
+{
+public:
+    Timer(int seconds)
+        : t_(io_service())
+    {
+        t_.expires_from_now(boost::posix_time::seconds(seconds));
+        co = this_coroutine::current;
+
+        t_.async_wait(std::bind(&Timer::handler, this, std::placeholders::_1));
+        co->yield();
+    }
+
+    void cancel()
+    {
+    }
+
+private:
+    void handler(const boost::system::error_code& error)
+    {
+        if(error)
+        {
+            std::cout << "Timer error: " << error << std::endl;
+        }
+        else
+        {
+            co->resume();
+        }
+    }
+
+    boost::asio::deadline_timer t_;
+    Coroutine* co;
+};
 
 
 void this_coroutine::jump(Coroutine* other)
@@ -341,6 +387,18 @@ void this_coroutine::wait()
     }
 
     Scheduler::get()->event().wait();
+}
+
+Timer* this_coroutine::sleep_for(int seconds)
+{
+    auto current = this_coroutine::current;
+    if(!current)
+    {
+        std::cout << "ERROR can not sleep_for in main context" << std::endl;
+        exit(1);
+    }
+
+    return new Timer(seconds);
 }
 
 

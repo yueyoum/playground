@@ -31,6 +31,7 @@ int main()
     boost::asio::io_service io;
     boost::asio::io_service::work w(io);
 
+    coro::io_service(io);
     auto sche = coro::Scheduler::get();
 
     sche->spawn(one, std::string("one"));
