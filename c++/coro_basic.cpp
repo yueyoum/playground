@@ -31,7 +31,7 @@ int main()
     boost::asio::io_service io;
     boost::asio::io_service::work w(io);
 
-    auto sche = coro::Scheduler::create(io);
+    auto sche = coro::Scheduler::get();
 
     sche->spawn(one, std::string("one"));
 
@@ -53,6 +53,8 @@ int main()
             );
 
     sche->run();
+
+    io.run();
 
     delete sche;
     std::cout << "end" << std::endl;
