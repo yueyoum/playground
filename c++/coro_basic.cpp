@@ -36,7 +36,6 @@ int main()
 
     sche->spawn(one, std::string("one"));
 
-
     boost::asio::deadline_timer timter(io, boost::posix_time::seconds(3));
     timter.async_wait(
             [&sche](const boost::system::error_code&)

@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <set>
 #include <queue>
 #include <mutex>
 #include <boost/asio.hpp>
@@ -15,10 +16,11 @@ namespace coro
 typedef boost::coroutines::symmetric_coroutine<void>::call_type call_type;
 typedef boost::coroutines::symmetric_coroutine<void>::yield_type yield_type;
 
-struct Coroutine;
+class Coroutine;
 class Event;
 class Scheduler;
 class Timer;
+static Coroutine* spawn(std::function<void()>, std::string);
 
 static boost::asio::io_service* io;
 void io_service(boost::asio::io_service& ios)
@@ -31,35 +33,43 @@ boost::asio::io_service& io_service()
     return *io;
 }
 
-
 namespace this_coroutine
 {
     static Coroutine* current = NULL;
+
     static void jump(Coroutine*);
 
-    void get();
+    Coroutine* get();
+    // yield: return to scheduler
+    //        and will re-enter by scheduler
     void yield();
-    void wait();
-    Timer* sleep_for(int);
+    // suspend: give up the execution passive,
+    //       due to some block call (e.g, IO, Event, Queue...)
+    //       or switch to other coroutines and wait back
+    //       this coroutine will be resume when that block call returns
+    void suspend();
+    std::shared_ptr<Timer> sleep_for(int);
 }
 
-
-struct Coroutine
+class Coroutine
 {
+public:
     call_type* ct;
     yield_type* yt;
     Coroutine* from;
     Coroutine* to;
-    bool alive;
     std::string name;
+    bool active;
+    bool yield_back;
 
     Coroutine(std::string n)
         : ct(NULL),
           yt(NULL),
           from(NULL),
           to(NULL),
-          alive(true),
-          name(n)
+          name(n),
+          active(true),
+          yield_back(false)
     {}
 
     ~Coroutine()
@@ -73,60 +83,60 @@ struct Coroutine
         std::cout << "[co] die " << name << std::endl;
     }
 
+    void add_link(Coroutine*)
+    {
+    }
+
+    void remove_link(Coroutine*)
+    {
+    }
+
     void yield()
     {
-        this_coroutine::current = from;
-        if(!from)
+        yield_back = true;
+        context_switch(from);
+    }
+
+    void suspend()
+    {
+        context_switch(from);
+    }
+
+    void jump(Coroutine* target)
+    {
+        target->from = this;
+        to = target;
+
+        context_switch(target);
+    }
+
+    // void resume()
+    // {
+    //     this_coroutine::current = this;
+    //     (*ct)();
+    // }
+
+private:
+    void context_switch(Coroutine* target)
+    {
+        this_coroutine::current = target;
+        if(target)
         {
-            std::cout << "[co] " << name << " yield to main" << std::endl;
-            (*yt)();
+            target->yield_back = false;
+            std::cout << "[co] " << name << " switch to " << target->name << std::endl;
+            (*yt)(*(target->ct));
         }
         else
         {
-            std::cout << "[co] " << name << " yield back to " << from->name << std::endl;
-            (*yt)(*(from->ct));
+            std::cout << "[co] " << name << " return to main context" << std::endl;
+            (*yt)();
         }
     }
 
-    void jump(Coroutine* other)
-    {
-        to = other;
-        this_coroutine::current = other;
-        std::cout << "[co] jump from " << name << " to " << other->name << std::endl;
-        other->from = this;
-        (*yt)(*(other->ct));
-    }
-
-    void resume()
-    {
-        this_coroutine::current = this;
-        (*ct)();
-    }
+    std::vector<Coroutine*> links;
 };
 
 
-Coroutine* spawn(std::function<void()> func, std::string name)
-{
-    Coroutine* co = new Coroutine(name);
-
-    auto func_wrapper = [co](yield_type& yield, std::function<void()> co_func)
-    {
-        co->yt = &yield;
-        co->yield();
-
-        // enter func
-        co_func();
-
-        co->alive = false;
-        co->yield();
-    };
-
-    call_type* ct = new call_type(std::bind(func_wrapper, std::placeholders::_1, func));
-    co->ct = ct;
-
-    this_coroutine::jump(co);
-    return co;
-}
 
 class Event
 {
@@ -160,9 +170,14 @@ public:
         if(!set_)
         {
             wait_queue_.push(current);
-            current->yield();
+            current->suspend();
         }
         set_ = false;
+    }
+
+    std::size_t size() const
+    {
+        return wait_queue_.size();
     }
 
 private:
@@ -218,7 +233,7 @@ private:
             process_set_ = false;
             set_ = true;
 
-            this_coroutine::yield();
+            this_coroutine::suspend();
         }
     }
 
@@ -227,6 +242,64 @@ private:
     std::queue<Coroutine*> wait_queue_;
     std::queue<Coroutine*> process_queue_;
     Coroutine* co;
+};
+
+
+template<class T>
+class Queue
+{
+public:
+    Queue() {}
+
+    std::size_t size() const
+    {
+        return q_.size();
+    }
+
+    void put(T& value)
+    {
+        std::cout << "[queue] put" << std::endl;
+        q_.push(value);
+        if(co_get_)
+        {
+            this_coroutine::jump(co_get_);
+        }
+    }
+
+    T& get()
+    {
+        auto current = this_coroutine::current;
+        if(!current)
+        {
+            std::cout << "ERROR, can not get queue in main context" << std::endl;
+            exit(1);
+        }
+
+        if(co_get_)
+        {
+            std::cout << "ERROR, another coroutine is get the queue" << std::endl;
+            exit(1);
+        }
+
+        std::cout << "[queue] co " << current->name << " start get" << std::endl;
+        if(q_.empty())
+        {
+            co_get_ = current;
+            current->suspend();
+        }
+
+        std::cout << "[queue] co " << current->name << " end get" << std::endl;
+
+        auto value = q_.front();
+        q_.pop();
+        co_get_ = NULL;
+        return std::ref(value);
+    }
+
+
+private:
+    std::queue<T> q_;
+    Coroutine* co_get_;
 };
 
 class Scheduler
@@ -246,27 +319,34 @@ public:
         return instance_;
     }
 
-    Event& event()
-    {
-        return evt_;
-    }
-
     void run()
     {
-        Coroutine* co = coro::spawn(std::bind(&Scheduler::loop, this), std::string("loop"));
-        this_coroutine::jump(co);
+        co_loop_ = coro::spawn(std::bind(&Scheduler::loop, this), std::string("loop"));
+        this_coroutine::jump(co_loop_);
+        coroutines.insert(co_loop_);
     }
 
     void spawn(std::function<void()> func, std::string name)
     {
         auto co = coro::spawn(func, name);
-        add_to_queue(co);
+        coroutines.insert(co);
+        queue_.put(co);
     }
 
+    void kill(Coroutine* co)
+    {
+        coroutines.erase(co);
+        // delete co;
+    }
+
+    std::size_t size() const
+    {
+        return coroutines.size();
+    }
 
 private:
     Scheduler()
-        : evt_(Event())
+        : queue_(Queue<Coroutine*>())
     {
     }
 
@@ -274,42 +354,34 @@ private:
     {
         for(;;)
         {
-            while(coroutines.empty())
-            {
-                std::cout << "[loop] wait start\n";
-                this_coroutine::wait();
-                std::cout << "[loop] wait done\n";
-            }
-
-            auto co = coroutines.front();
-            coroutines.pop();
+            std::cout << "[loop] start get" << std::endl;
+            auto co = queue_.get();
+            std::cout << "[loop] got: " << co->name << std::endl;
 
             std::cout << "[loop] start to run " << co->name << std::endl;
             this_coroutine::jump(co);
             std::cout << "[loop] back from " << co->name << std::endl;
 
-            if(co->alive)
+            if(co->active)
             {
-                coroutines.push(co);
+                if(co->yield_back)
+                {
+                    queue_.put(co);
+                }
             }
             else
             {
-                delete co;
+                kill(co);
             }
         }
-    }
-
-    void add_to_queue(Coroutine* co)
-    {
-        coroutines.push(co);
-        evt_.set();
     }
 
     static std::mutex mutex_;
     static Scheduler* instance_;
 
-    std::queue<Coroutine*> coroutines;
-    Event evt_;
+    std::set<Coroutine*> coroutines;
+    Queue<Coroutine*> queue_;
+    Coroutine* co_loop_;
 };
 
 class Timer
@@ -322,7 +394,7 @@ public:
         co = this_coroutine::current;
 
         t_.async_wait(std::bind(&Timer::handler, this, std::placeholders::_1));
-        co->yield();
+        co->suspend();
     }
 
     void cancel()
@@ -338,7 +410,7 @@ private:
         }
         else
         {
-            co->resume();
+            this_coroutine::jump(co);
         }
     }
 
@@ -347,22 +419,55 @@ private:
 };
 
 
+static Coroutine* spawn(std::function<void()> func, std::string name)
+{
+    Coroutine* co = new Coroutine(name);
+
+    auto func_wrapper = [co](yield_type& yield, std::function<void()> co_func)
+    {
+        co->yt = &yield;
+        co->suspend();
+
+        // enter func
+        co_func();
+
+        co->active = false;
+        auto from = co->from;
+
+        Scheduler::get()->kill(co);
+        this_coroutine::current = NULL;
+        if(from)
+        {
+            this_coroutine::jump(from);
+        }
+    };
+
+    call_type* ct = new call_type(std::bind(func_wrapper, std::placeholders::_1, func));
+    co->ct = ct;
+
+    this_coroutine::jump(co);
+    return co;
+}
+
+
+Coroutine* this_coroutine::get()
+{
+    return this_coroutine::current;
+}
+
 void this_coroutine::jump(Coroutine* other)
 {
-    auto current = this_coroutine::current;
-    this_coroutine::current = other;
-
-    if(current)
+    if(this_coroutine::current)
     {
         // call in a coroutine
-        std::cout << "[this_coroutine] jump from " << current->name << " to " << other->name << std::endl;
         current->jump(other);
     }
     else
     {
         // call in main context
-        std::cout << "[this_coroutine] jump from main context to " << other->name << std::endl;
+        std::cout << "[main] jump from main context to " << other->name << std::endl;
         other->from = NULL;
+        this_coroutine::current = other;
         (*(other->ct))();
     }
 }
@@ -378,7 +483,7 @@ void this_coroutine::yield()
     this_coroutine::current->yield();
 }
 
-void this_coroutine::wait()
+void this_coroutine::suspend()
 {
     if(!this_coroutine::current)
     {
@@ -386,10 +491,10 @@ void this_coroutine::wait()
         exit(1);
     }
 
-    Scheduler::get()->event().wait();
+    this_coroutine::current->suspend();
 }
 
-Timer* this_coroutine::sleep_for(int seconds)
+std::shared_ptr<Timer> this_coroutine::sleep_for(int seconds)
 {
     auto current = this_coroutine::current;
     if(!current)
@@ -398,7 +503,7 @@ Timer* this_coroutine::sleep_for(int seconds)
         exit(1);
     }
 
-    return new Timer(seconds);
+    return std::make_shared<Timer>(seconds);
 }
 
 
