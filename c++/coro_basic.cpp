@@ -22,7 +22,17 @@ void two()
 void three()
 {
     std::cout << "[three] 1" << std::endl;
-    return;
+    coro::this_coroutine::yield();
+    std::cout << "[three] 2" << std::endl;
+}
+
+void four()
+{
+    std::cout << "[four] 1" << std::endl;
+    coro::this_coroutine::yield();
+    std::cout << "[four] 2" << std::endl;
+    coro::this_coroutine::yield();
+    std::cout << "[four] 3" << std::endl;
 }
 
 int main()
@@ -31,8 +41,7 @@ int main()
     boost::asio::io_service io;
     boost::asio::io_service::work w(io);
 
-    coro::io_service(io);
-    auto sche = coro::Scheduler::get();
+    auto sche = coro::Scheduler::create(io);
 
     sche->spawn(one, std::string("one"));
 
@@ -41,6 +50,7 @@ int main()
             [&sche](const boost::system::error_code&)
             {
                 sche->spawn(two, std::string("two"));
+                sche->spawn(three, std::string("three"));
             }
             );
 
@@ -48,7 +58,7 @@ int main()
     timter1.async_wait(
             [&sche](const boost::system::error_code&)
             {
-                sche->spawn(three, std::string("three"));
+                sche->spawn(four, std::string("four"));
             }
             );
 
