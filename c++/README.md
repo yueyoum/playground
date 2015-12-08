@@ -8,7 +8,12 @@
 
 # coro_basic.cpp
 
-头文件: coro.h
-
 演示了 基于 stackful 对称式协程 封装的 coro 使用方法
 
+# coro_event_and_queue.cpp
+
+演示了 Event 同步协程， Queue 在协程之间传递参数
+
+# coro_echo_server.cpp
+
+演示了 基于协程的一个简单的echo server, 用同步的方式写异步程序
