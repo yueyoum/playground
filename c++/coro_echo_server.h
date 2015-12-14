@@ -17,28 +17,34 @@ public:
         socket_(std::move(socket))
     {}
 
+    boost::asio::io_service& io_service()
+    {
+        return socket_.get_io_service();
+    }
+
     std::string recv(const std::size_t& size)
     {
         std::array<char, 1024> buf;
 
         auto current = coro::this_coroutine::detail::current;
+        bool has_error = false;
 
         socket_.async_read_some(
                 boost::asio::buffer(buf),
-                [current](const boost::system::error_code& error, std::size_t)
+                [current, &has_error](const boost::system::error_code& error, std::size_t)
                 {
                     if(error)
                     {
                         std::cout << "recv error: " << error << std::endl;
+                        has_error  = true;
                     }
-                    else
-                    {
-                        coro::this_coroutine::detail::jump(current);
-                    }
+                    coro::this_coroutine::detail::jump(current);
                 }
                 );
 
         coro::this_coroutine::suspend();
+
+        if(has_error) return std::string();
         return std::string(buf.data());
     }
 
@@ -71,6 +77,41 @@ private:
 
 
 typedef std::shared_ptr<Connection> Client;
+
+
+class Endpoint : public Connection
+{
+public:
+    Client static connect(boost::asio::io_service& io, std::string ip, int port)
+    {
+        tcp::socket socket(io);
+        tcp::endpoint endpoint(
+                boost::asio::ip::address::from_string(ip),
+                port
+        );
+
+        auto current = coro::this_coroutine::detail::current;
+
+        socket.async_connect(
+                endpoint,
+                [current](const boost::system::error_code& error)
+                {
+                    if(error)
+                    {
+                        std::cout << "connect error: " << error << std::endl;
+                    }
+                    else
+                    {
+                        coro::this_coroutine::detail::jump(current);
+                    }
+                }
+        );
+
+        coro::this_coroutine::suspend();
+
+        return std::make_shared<Connection>(std::move(socket));
+    }
+};
 
 
 class Server
